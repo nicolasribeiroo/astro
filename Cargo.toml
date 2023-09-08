@@ -1,0 +1,31 @@
+[package]
+name = "astro"
+version = "0.1.0"
+edition = "2021"
+
+[profile.release]
+codegen-units = 1
+lto = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# utils
+config = "0.13.3"
+tracing = "0.1"
+uuid = { version = "1.4", features = ["v4", "fast-rng"] }
+
+# web
+actix-web = "4.0.0"
+tracing-actix-web = "0.6"
+
+# database
+tokio-postgres = "0.7.8"
+deadpool-postgres = "0.10"
+
+# async
+tokio = { version = "1.32.0", features = ["full"] }
+
+# json
+serde_json = "1"
+serde = { version = "1", features = ["derive"] }
