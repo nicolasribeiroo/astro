@@ -7,4 +7,5 @@ pub fn routes(cfg: &mut ServiceConfig) {
     cfg.service(root::req);
     cfg.service(users::get::req);
     cfg.service(users::create::req);
+    cfg.service(users::delete::req);
 }

@@ -3,10 +3,12 @@ use connectivity::postgres::PostgresManager;
 use std::time::Duration;
 use tokio::sync::Mutex;
 use tracing_actix_web::TracingLogger;
+use tracing_subscriber::{fmt, prelude::__tracing_subscriber_SubscriberExt, EnvFilter, Registry};
 use util::types::AsyncVoidResult;
 
 pub mod connectivity;
 pub mod routes;
+pub mod structs;
 pub mod util;
 
 pub struct ServerState {
@@ -15,9 +17,15 @@ pub struct ServerState {
 
 #[tokio::main]
 async fn main() -> AsyncVoidResult {
+    let env_filter = EnvFilter::try_from_default_env().unwrap_or(EnvFilter::new("info"));
+    let fmt_layer = fmt::layer().with_target(false);
+    let subscriber = Registry::default().with(env_filter).with(fmt_layer);
+    tracing::subscriber::set_global_default(subscriber).expect("Failed to set subscriber");
+
     let postgres = connectivity::postgres::PostgresManager::new();
 
     postgres.migrate_database().await?;
+    // postgres.drop_users_table().await?;
 
     tracing::info!("Starting HTTP Server on {}:{}", "0.0.0.0", "4001");
 

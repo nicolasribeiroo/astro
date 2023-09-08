@@ -1,4 +1,4 @@
-use crate::{util::types::APIResult, ServerState};
+use crate::{structs::web::SuccessResponse, util::types::APIResult, ServerState};
 use actix_web::{get, web, HttpResponse};
 use tokio::sync::Mutex;
 
@@ -9,5 +9,8 @@ pub async fn req(data: web::Data<Mutex<ServerState>>, id: web::Path<String>) -> 
 
     let user_data = postgres.get_user_by_id(id.into_inner()).await?;
 
-    Ok(HttpResponse::Ok().json(user_data))
+    Ok(HttpResponse::Ok().json(SuccessResponse {
+        success: true,
+        data: serde_json::json!(user_data),
+    }))
 }

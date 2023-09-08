@@ -20,15 +20,25 @@ impl PostgresManager {
     pub fn new() -> PostgresManager {
         let mut cfg = Config::new();
 
-        cfg.host = Some("localhost".to_string());
-        cfg.port = Some(5432);
-        cfg.dbname = Some("astro".to_string());
-        cfg.user = Some("postgres".to_string());
+        let host = std::env::var("POSTGRES_HOST").unwrap_or_else(|_| "localhost".to_string());
+        let port = std::env::var("POSTGRES_PORT").unwrap_or_else(|_| "5432".to_string());
+        let dbname = std::env::var("POSTGRES_DBNAME").unwrap_or_else(|_| "astro".to_string());
+        let password =
+            std::env::var("POSTGRES_PASSWORD").unwrap_or_else(|_| "postgres".to_string());
+        let user = std::env::var("POSTGRES_USER").unwrap_or_else(|_| "postgres".to_string());
+
+        cfg.host = Some(host);
+        cfg.port = Some(port.parse::<u16>().unwrap());
+        cfg.dbname = Some(dbname);
+        cfg.password = Some(password);
+        cfg.user = Some(user);
 
         let pc = PoolConfig::new(175);
         cfg.pool = pc.into();
 
         let pool = cfg.create_pool(Some(Runtime::Tokio1), NoTls).unwrap();
+
+        tracing::info!("Postgres connection pool created");
 
         Self { pool }
     }
@@ -47,6 +57,14 @@ impl PostgresManager {
                 &[],
             )
             .await?;
+
+        Ok(())
+    }
+
+    pub async fn drop_users_table(&self) -> AsyncVoidResult {
+        let client = self.pool.get().await?;
+
+        let _ = client.execute("DROP TABLE users", &[]).await?;
 
         Ok(())
     }
@@ -71,6 +89,10 @@ impl PostgresManager {
             .query_one("SELECT * FROM users WHERE id = $1", &[&id])
             .await?;
 
+        if row.is_empty() {
+            return Err("User not found".into());
+        }
+
         let user = User {
             id: row.get(0),
             username: row.get(1),
@@ -79,5 +101,15 @@ impl PostgresManager {
         };
 
         Ok(user)
+    }
+
+    pub async fn delete_user_by_id(&self, id: String) -> AsyncVoidResult {
+        let client = self.pool.get().await?;
+
+        let _ = client
+            .execute("DELETE FROM users WHERE id = $1", &[&id])
+            .await?;
+
+        Ok(())
     }
 }
